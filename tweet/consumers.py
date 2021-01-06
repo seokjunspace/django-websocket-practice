@@ -7,6 +7,7 @@ from .models import Tweet, Clients
 from .api.serializers import TweetSerializer
 from django.dispatch import receiver
 from django.db.models.signals import post_save
+from .views import tweet_list
 
 
 @receiver(post_save, sender=Tweet)
@@ -30,6 +31,7 @@ class FeedConsumer(WebsocketConsumer):
     def connect(self):
         self.keyword_name = self.scope['url_route']['kwargs']['keyword']
         self.keyword_group_name = f'keyword_{self.keyword_name}'
+        self.new_offset = 0
         print(self.keyword_group_name)
         # keyword 그룹에 현재 channel을 추가시킨다.
         async_to_sync(self.channel_layer.group_add)(
@@ -48,17 +50,28 @@ class FeedConsumer(WebsocketConsumer):
 
 
     def receive(self, text_data):
-        """ 특정 키워드의 요청이 들어오면 해당하는 트윗 데이터 시간 순서로 n개 내보내기"""
-        tweets = Tweet.retrieve_recent_10_tweets(Tweet, self.keyword_name)
-        serializedTweets = TweetSerializer(tweets, many=True)
+        text = json.loads(text_data)
+        print(text)
+        print("offset:", text['offset'])
 
+        print("limit:", text['limit'])
+        self.limit = int(text['limit'])
+        self.offset = int(text['offset'])*self.limit
+        """ 특정 키워드의 요청이 들어오면 해당하는 트윗 데이터 시간 순서로 n개 내보내기"""
+        tweets = Tweet.retrieve_recent_tweets(Tweet, self.keyword_name, self.offset+self.new_offset, self.limit)
+        serializedTweets = TweetSerializer(tweets, many=True)
         """ 해당 키워드의 그룹에 속한 consumer에게 tweet 전송하기 """
         async_to_sync(self.channel_layer.send)(
             self.channel_name, {
-                "type": "send.tweet",
-                "tweet": json.dumps(serializedTweets.data)
+                "type": "send.tweets",
+                "tweets": json.dumps(serializedTweets.data)
             })
 
-    def send_tweet(self, event):
-        tweets = json.loads(event["tweet"])
+    def send_tweets(self, event):
+        tweets = json.loads(event["tweets"])
         self.send(json.dumps(tweets))
+
+    def send_tweet(self, event):
+        self.new_offset += 1
+        tweet = json.loads(event["tweet"])
+        self.send(json.dumps(tweet))

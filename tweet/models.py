@@ -9,8 +9,8 @@ class Tweet(models.Model):
     def __str__(self):
         return str(self.id)
 
-    def retrieve_recent_10_tweets(self, keyword):
-        return Tweet.objects.order_by('-created_at').filter(keyword=keyword)[:10]
+    def retrieve_recent_tweets(self, keyword, offset, limit):
+        return Tweet.objects.order_by('-created_at').filter(keyword=keyword)[offset:offset+limit]
 
 
 class Clients(models.Model):
