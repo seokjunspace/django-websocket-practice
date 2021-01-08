@@ -21,9 +21,10 @@
         );
 
         chatSocket.onopen = function(e) {
-            console.log("연결성공테스트")
+            console.log("웹소켓연결성공테스트")
             chatSocket.send(JSON.stringify({
-                'message': "초기데이터 받기위한 send"
+                'offset': "0",
+                'limit' : "10",
             }));
         };
 
@@ -33,11 +34,14 @@
             const data = JSON.parse(e.data);
             console.log(data)
             console.log(data.message)
-            let i;
-            for (i = 0; i< data.length; i++) {
-                document.querySelector('#chat-log').value += (data[i].message + '\n');
+            if (data.length>1) {
+                for (let i = 0; i< data.length; i++) {
+                    document.querySelector('#chat-log').value += (data[i].message + '\n');
+                }
+            } else {
+                document.querySelector('#chat-log').value += (data.message + '\n');
             }
-            document.querySelector('#chat-log').value += (data.message + '\n');
+
 
         };
 
@@ -55,8 +59,10 @@
         document.querySelector('#chat-message-submit').onclick = function(e) {
             const messageInputDom = document.querySelector('#chat-message-input');
             const message = messageInputDom.value;
+            console.log(message)
             chatSocket.send(JSON.stringify({
-                'keyword': "abc"
+                'offset': message,
+                'limit' : "10",
             }));
             messageInputDom.value = '';
         };

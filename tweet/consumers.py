@@ -4,10 +4,11 @@ from asgiref.sync import async_to_sync
 from channels.generic.websocket import WebsocketConsumer
 from channels.layers import get_channel_layer
 from .models import Tweet, Clients
-from .api.serializers import TweetSerializer
+from .api.serializers import TweetSerializer, TestSerializer
 from django.dispatch import receiver
 from django.db.models.signals import post_save
 from .views import tweet_list
+from .utils import get_serialized_tweet
 
 
 @receiver(post_save, sender=Tweet)
@@ -51,10 +52,6 @@ class FeedConsumer(WebsocketConsumer):
 
     def receive(self, text_data):
         text = json.loads(text_data)
-        print(text)
-        print("offset:", text['offset'])
-
-        print("limit:", text['limit'])
         self.limit = int(text['limit'])
         self.offset = int(text['offset'])*self.limit
         """ 특정 키워드의 요청이 들어오면 해당하는 트윗 데이터 시간 순서로 n개 내보내기"""
@@ -67,11 +64,27 @@ class FeedConsumer(WebsocketConsumer):
                 "tweets": json.dumps(serializedTweets.data)
             })
 
+        test_tweets = get_serialized_tweet()
+        print("반환된것", test_tweets)
+
+        for test_tweet in test_tweets:
+            print(test_tweet)
+            print(test_tweet.get('tweetid'))
+
+        # for test_tweet in test_tweets:
+        #     print(i, test_tweet)
+        #     i += 1
+        #     test_serializer = TestSerializer(message=test_tweet.message)
+        #     print(test_tweet.message)
+        #     print(i, " : " ,test_serializer.data)
+
+
     def send_tweets(self, event):
         tweets = json.loads(event["tweets"])
         self.send(json.dumps(tweets))
 
     def send_tweet(self, event):
+        ''' 실시간 트윗을 묶음으로 가져오면 조회된 횟수만큼 offset 증가시키기'''
         self.new_offset += 1
         tweet = json.loads(event["tweet"])
         self.send(json.dumps(tweet))
