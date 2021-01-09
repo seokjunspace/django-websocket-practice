@@ -12,6 +12,11 @@ class Tweet(models.Model):
     def retrieve_recent_tweets(self, keyword, offset, limit):
         return Tweet.objects.order_by('-created_at').filter(keyword=keyword)[offset:offset+limit]
 
+    def retrieve_all_tweets(self):
+        return Tweet.objects.all()
+
+    def retrieve_first_tweet(self):
+        return Tweet.objects.get(id=1)
 
 class Clients(models.Model):
     channel_name = models.CharField(max_length=32, null=False)

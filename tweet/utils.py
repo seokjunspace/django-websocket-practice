@@ -1,5 +1,6 @@
 from cassandra.cluster import Cluster
 from .api.serializers import TestSerializer
+import sys
 
 
 def get_serialized_tweet():
@@ -11,13 +12,13 @@ def get_serialized_tweet():
     cluster = Cluster()
     connection = cluster.connect('feed')
     tweets = connection.execute('SELECT * FROM tweet;')
-    # print(tweets)
+    print(tweets)
+    size_of_tweets = sys.getsizeof(tweets)
+    print("size of tweet is ", size_of_tweets)
     '''이방식으로 serialization 정상적으로 작동함 '''
-    # for tweet in tweets:
-    #     serializer = TestSerializer(tweet)
-    #     print(serializer.data)
-    # serializer = TestSerializer(tweets)
-    serializer = TestSerializer(tweets, many=True)
+    serializer = TestSerializer(instance=tweets, many=True)
+    print("size of serializer is ", sys.getsizeof(serializer.data))
+    print("count of serializer is ", len(serializer.data)) #이것으로 tweet 개수 파악 가능.
     return serializer.data
 
 
