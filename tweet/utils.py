@@ -1,4 +1,8 @@
+import json
+
 from cassandra.cluster import Cluster
+from rest_framework.renderers import JSONRenderer
+
 from .api.serializers import TestSerializer
 import sys
 import time
@@ -12,6 +16,16 @@ def logging_time(original_fn):
         print("WorkingTime[{}]: {} sec".format(original_fn.__name__, end_time-start_time))
         return result
     return wrapper_fn
+
+def get_one_tweet():
+    cluster = Cluster(['127.0.0.1'])
+    connection = cluster.connect('feed')
+    tweets = connection.execute('SELECT * FROM tweet WHERE TweetID < 2 ALLOW FILTERING;')
+    serializer = TestSerializer(instance=tweets, many=True)
+    print(serializer.data)
+    return serializer.data
+
+
 
 @logging_time
 def get_serialized_tweet():
@@ -32,7 +46,13 @@ def get_serialized_tweet():
 
 
     start_time = time.time()
-    tweets = connection.execute('SELECT * FROM tweet;')
+    tweets = connection.execute('SELECT * FROM tweet WHERE TweetID < 10 ALLOW FILTERING;')
+    print('어떻게나오나한번찍어나보자',tweets)
+    # 단수 조회회
+   # tweets = connection.execute('SELECT * FROM tweet WHERE TweetID=1;')
+    # print(tweets)
+    # print("첫번째확인:", tweets[0].message)
+
     end_time = time.time()
     print("WorkingDBTimeForLargeTweets: {} sec".format(end_time - start_time))
 
@@ -46,7 +66,7 @@ def get_serialized_tweet():
     print("WorkingSerializationTime: {} sec".format(end_time - start_time))
     print("size of serializer is ", sys.getsizeof(serializer.data))
     print("count of serializer is ", len(serializer.data)) #이것으로 tweet 개수 파악 가능.
-    return serializer.data
+    return json.loads(JSONRenderer().render(serializer.data))
 
 @logging_time
 def get_raw_tweets():
@@ -65,12 +85,9 @@ def get_raw_tweets():
     return tweets
 
 
-    # serialize의 부하를 확인하기 위해 여기서 선택된 개수만 serialize해볼까.
-    # model_tweets = Tweet(tweets)
-
-    # start_time = time.time()
-    # serializer = TestSerializer(instance=tweets, many=True)
-    # end_time = time.time()
-    # print("WorkingSerializationTime: {} sec".format(end_time - start_time))
-    #
-    # return serializer.data
+def get_query_tweets(id):
+    cluster = Cluster()
+    connection = cluster.connect('feed')
+    tweets = connection.execute(f'SELECT * FROM tweet WHERE TweetID<{id} ALLOW FILTERING;')
+    serializer = TestSerializer(instance=tweets, many=True)
+    return json.loads(JSONRenderer().render(serializer.data))
