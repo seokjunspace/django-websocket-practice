@@ -13,7 +13,7 @@ def logging_time(original_fn):
         start_time = time.time()
         result = original_fn(*args, **kwargs)
         end_time = time.time()
-        print("WorkingTime[{}]: {} sec".format(original_fn.__name__, end_time-start_time))
+        # print("WorkingTime[{}]: {} sec".format(original_fn.__name__, end_time-start_time))
         return result
     return wrapper_fn
 
@@ -37,35 +37,35 @@ def get_serialized_tweet():
     start_time = time.time()
     cluster = Cluster(['127.0.0.1'])
     end_time = time.time()
-    print("ClusterCreationTime: {} sec".format(end_time - start_time))
+    # print("ClusterCreationTime: {} sec".format(end_time - start_time))
 
     start_time = time.time()
     connection = cluster.connect('feed')
     end_time = time.time()
-    print("ConnectionTime: {} sec".format(end_time - start_time))
+    # print("ConnectionTime: {} sec".format(end_time - start_time))
 
 
     start_time = time.time()
     tweets = connection.execute('SELECT * FROM tweet WHERE TweetID < 10 ALLOW FILTERING;')
-    print('어떻게나오나한번찍어나보자',tweets)
+    # print('어떻게나오나한번찍어나보자',tweets)
     # 단수 조회회
    # tweets = connection.execute('SELECT * FROM tweet WHERE TweetID=1;')
     # print(tweets)
     # print("첫번째확인:", tweets[0].message)
 
     end_time = time.time()
-    print("WorkingDBTimeForLargeTweets: {} sec".format(end_time - start_time))
+    # print("WorkingDBTimeForLargeTweets: {} sec".format(end_time - start_time))
 
     size_of_tweets = sys.getsizeof(tweets)
-    print("size of tweet is ", size_of_tweets)
+    # print("size of tweet is ", size_of_tweets)
     '''이방식으로 serialization 정상적으로 작동함 '''
     ''' 웃긴게 many=True가 아니면 변수명 제대로 안맞음'''
     start_time = time.time()
     serializer = TestSerializer(instance=tweets, many=True)
     end_time = time.time()
-    print("WorkingSerializationTime: {} sec".format(end_time - start_time))
-    print("size of serializer is ", sys.getsizeof(serializer.data))
-    print("count of serializer is ", len(serializer.data)) #이것으로 tweet 개수 파악 가능.
+    # print("WorkingSerializationTime: {} sec".format(end_time - start_time))
+    # print("size of serializer is ", sys.getsizeof(serializer.data))
+    # print("count of serializer is ", len(serializer.data)) #이것으로 tweet 개수 파악 가능.
     return json.loads(JSONRenderer().render(serializer.data))
 
 @logging_time
@@ -75,12 +75,12 @@ def get_raw_tweets():
     start_time = time.time()
     connection = cluster.connect('feed')
     end_time = time.time()
-    print("ConnectiongDBTime: {} sec".format(end_time - start_time))
+    # print("ConnectiongDBTime: {} sec".format(end_time - start_time))
 
     start_time = time.time()
     tweets = connection.execute('SELECT * FROM tweet WHERE TweetID<5 ALLOW FILTERING;')
     end_time = time.time()
-    print("WorkingDBTimeForSmallTweets: {} sec".format(end_time - start_time))
+    # print("WorkingDBTimeForSmallTweets: {} sec".format(end_time - start_time))
 
     return tweets
 

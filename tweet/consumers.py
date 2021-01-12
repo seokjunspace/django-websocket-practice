@@ -19,64 +19,62 @@ import asyncio
 
 
 class FeedConsumer(WebsocketConsumer):
-    def connect(self):
-        self.accept()
-        self.retreive_first_tweets() # 웹소켓이 연결되어 초기 트윗 전송
-        self.keep_sending_tweets()  # 웹소켓이 연결되면 연결된 동안 최신 트윗 계속 내보내도록 하기
+
+    def connect(self):  # HANDSHAKING
+        print("시작함:", self.channel_name)
+        print(self.scope['client'])
+        self.accept()  # CONNECT made
 
     def disconnect(self, close_code):
-        self.timer.cancel()
+        ''' disconnect 되면 채널 이름을 삭제해서 timer 종료되도록 함.'''
+        self.channel_name = None
+        try:
+            self.timer.cancel()
+        except:
+            print("HANDSHAKING 후 connect에서 accept 되지 못하면 disconnect로 넘어오므로 timer는 존재하지 않음")
 
     def receive(self, text_data):
-        ''' 스크롤을 내려서 더 제공하는 것은 필요가 없으므로 이부분은 필요가 없어짐 '''
-        # text = json.loads(text_data)
-        # serialized_tweets_data = get_one_tweet()
-        # async_to_sync(self.channel_layer.send)(
-        #     self.channel_name, {
-        #         "type": "send.tweets",
-        #         "tweets": json.dumps(serialized_tweets_data)
-        #     })
+        ''' 웹소켓 연결 성공 후, 프론트에서 연결 성공 메세지 수령'''
+        self.retreive_first_tweets()  # 웹소켓이 연결되어 초기 트윗 전송
+        self.keep_sending_tweets()  # 웹소켓이 연결되면 연결된 동안 최신 트윗 계속 내보내도록 하기
 
     def retreive_first_tweets(self):
         ''' 초기 트윗 가져오는 함수를 실행하고 가장 최신 트윗의 id를 저장한다'''
         serialized_tweets_data = get_serialized_tweet()
-        print(serialized_tweets_data)
         self.top_tweet_id = serialized_tweets_data[0]['tweetid']
-        print("성공확인", self.top_tweet_id)
-
         self.send(json.dumps(get_serialized_tweet()))
-        # async_to_sync(self.channel_layer.send)(
-        #     self.channel_name, {
-        #         "type": "send.tweets",
-        #         "tweets": json.dumps(get_serialized_tweet())
-        #     })
 
     def keep_sending_tweets(self):
-        """ 여기서 최신 트윗 인수로 넣어서 그 이후의 트윗 가져오기"""
-        print("시작", self.top_tweet_id)
-        serialized_tweets_data = get_query_tweets(self.top_tweet_id) #여기서 인수로 top_id 넣고 SELECT WHERE id>top_id
+        """ 여기서 최신 트윗 인수로 넣어서 그 이후의 트윗 가져오기. 3초마다 실행 """
+        serialized_tweets_data = get_query_tweets(self.top_tweet_id)  # 여기서 인수로 top_id 넣고 SELECT WHERE id>top_id
 
         """ 새롭게 생성된 트윗이 없다면 전송하지 않고 있는 경우에만 전송 """
         if serialized_tweets_data:
-            print("한번지나갑니다")
+            ''' 웹소켓이 닫히더라도 timer가 돌고 있는 경우 이게 한번 더 실행됨'''
             '''새로 생성되어 조회된 트윗이 있으면 가장 처음 트윗의 id 저장하고 전송함'''
             self.top_tweet_id = serialized_tweets_data[0]['tweetid']
             self.send(json.dumps(serialized_tweets_data))
-            # async_to_sync(self.channel_layer.send)(
-            #     self.channel_name, {
-            #         "type": "send.tweets",
-            #         "tweets": json.dumps(serialized_tweets_data)
-            #     })
         else:
-            print("지나갑니다")
-            pass
-        ''' 3초마다 실시간 트윗을 조회하도록 한다.'''
-        self.timer = threading.Timer(3, self.keep_sending_tweets)
-        self.timer.start()
+            print("해당 토픽에 새로 생성된 트윗이 없다")
 
-    def send_tweets(self, event):
-        tweets = json.loads(event["tweets"])
-        self.send(json.dumps(tweets))
+        if self.channel_name is not None:
+            self.timer = threading.Timer(3, self.keep_sending_tweets)
+            self.timer.start()
+        else:
+            print("채널 삭제 확인")
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # class FeedConsumer(WebsocketConsumer):
 #     """특정 토픽으로 요청이 들어오면 컨슈머에 해당 토픽의 이름을 저장하고 해당하는 그룹에 컨슈머를 추가시킴."""
