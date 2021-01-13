@@ -18,6 +18,64 @@ import threading
 import asyncio
 
 
+# class Timer:
+#     def __init__(self, timeout, callback):
+#         self._timeout = timeout
+#         self._callback = callback
+#         self._task = asyncio.ensure_future(self._job())
+#
+#     async def _job(self):
+#         await asyncio.sleep(self._timeout)
+#         await self._callback()
+#
+#     def cancel(self):
+#         self._task.cancel()
+#
+#
+#
+# class FeedConsumer(AsyncWebsocketConsumer):
+#
+#     async def connect(self):  # HANDSHAKING
+#         print("시작함:", self.channel_name)
+#         print(self.scope['client'])
+#         await self.accept()  # CONNECT made
+#
+#     async def disconnect(self, close_code):
+#         self.channel_name = None
+#         try:
+#             await self.timer.cancel()
+#         except:
+#             print("HANDSHAKING 후 connect에서 accept 되지 못하면 disconnect로 넘어오므로 timer는 존재하지 않음")
+#
+#     async def receive(self, text_data):
+#         await self.retreive_first_tweets()  # 웹소켓이 연결되어 초기 트윗 전송
+#         await self.keep_sending_tweets()  # 웹소켓이 연결되면 연결된 동안 최신 트윗 계속 내보내도록 하기
+#
+#     async def retreive_first_tweets(self):
+#         serialized_tweets_data = get_serialized_tweet()
+#         self.top_tweet_id = serialized_tweets_data[0]['tweetid']
+#         await self.send(json.dumps(get_serialized_tweet()))
+#
+#     async def keep_sending_tweets(self):
+#         print(self.channel_name,"실시간 가동중")
+#         serialized_tweets_data = get_query_tweets(self.top_tweet_id)  # 여기서 인수로 top_id 넣고 SELECT WHERE id>top_id
+#
+#         if serialized_tweets_data:
+#             self.top_tweet_id = serialized_tweets_data[0]['tweetid']
+#             await self.send(json.dumps(serialized_tweets_data))
+#         else:
+#             print("해당 토픽에 새로 생성된 트윗이 없다")
+#
+#
+#         if self.channel_name is not None:
+#             self.timer = Timer(3, self.keep_sending_tweets)
+#             # self.timer.start()
+#             # await asyncio.sleep(1.5)
+#         else:
+#             print("채널 삭제 확인")
+
+
+
 class FeedConsumer(WebsocketConsumer):
 
     def connect(self):  # HANDSHAKING
@@ -55,21 +113,21 @@ class FeedConsumer(WebsocketConsumer):
             self.top_tweet_id = serialized_tweets_data[0]['tweetid']
             self.send(json.dumps(serialized_tweets_data))
         else:
-            print("해당 토픽에 새로 생성된 트윗이 없다")
+            print(self.channel_name, "해당 토픽에 새로 생성된 트윗이 없다")
 
         if self.channel_name is not None:
             self.timer = threading.Timer(3, self.keep_sending_tweets)
             self.timer.start()
         else:
             print("채널 삭제 확인")
-
-
-
-
-
-
-
-
+#
+#
+#
+#
+#
+#
+#
+#
 
 
 
